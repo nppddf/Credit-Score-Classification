@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import kaggle
 
 
-def download_dataset(dataset: str, dest: Path):
+def download_dataset(dataset: str, dest: Path) -> None:
     dest.mkdir(parents=True, exist_ok=True)
 
     if any(dest.iterdir()):
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     load_dotenv()
     KAGGLE_API_TOKEN = os.getenv("KAGGLE_API_TOKEN")
 
-    DATA_DIR = Path("data")
+    DATA_DIR = Path("data/raw")
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     DATASET_NAME = "parisrohan/credit-score-classification"
 
