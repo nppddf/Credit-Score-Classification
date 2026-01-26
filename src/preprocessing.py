@@ -48,17 +48,18 @@ def fix_inconsistent_values(df, groupby, column):
     print(
         "\nExisting Min, Max Values:", df[column].apply([min, max]), sep="\n", end="\n"
     )
+    
 
     df_dropped = df[df[column].notna()].groupby(groupby)[column].apply(list)
-    x, y = df_dropped.apply(lambda x: stats.mode(x)).apply([min, max])
-    mini, maxi = x[0][0], y[0][0]
+    modes = df_dropped.apply(lambda x: stats.mode(x))
+    mini, maxi = modes.min(), modes.max()
 
     col = df[column].apply(
         lambda x: np.nan if ((x < mini) | (x > maxi) | (x < 0)) else x
     )
 
     mode_by_group = df.groupby(groupby)[column].transform(
-        lambda x: x.median()[0] if not x.mode().empty else np.nan
+        lambda x: x.median() if len(x) > 0 else np.nan
     )
     df[column] = col.fillna(mode_by_group)
     df[column].fillna(df[column].median(), inplace=True)
@@ -85,15 +86,16 @@ def clean_numerical_field(
         print(f"\nTrailing & leading {strip} are removed")
 
     if datatype is not None:
-        df[column] = df[column].astype(datatype)
+        df[column] = pd.to_numeric(df[column], errors='coerce')
         print(f"\nDatatype of {column} is changed to {datatype}")
+    elif df[column].dtype == object:
+        df[column] = pd.to_numeric(df[column], errors='coerce')
+        print(f"\nColumn {column} converted to numeric type")
 
     fix_inconsistent_values(df, groupby, column)
 
 
 if __name__ == "__main__":
-    # Get the project root directory (parent of src/)
-    # Use resolve() to get absolute path, works regardless of current working directory
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
     data_path = project_root / "data" / "raw" / "train.csv"
@@ -103,12 +105,19 @@ if __name__ == "__main__":
             f"Dataset not found at {data_path}. "
             f"Please run 'python src/download_dataset.py' first to download the dataset."
         )
+    RAW_DATA = pd.read_csv(data_path, low_memory=False)
+    TRAIN_DATA = RAW_DATA.copy()
     
-    TRAIN_DATA = pd.read_csv(data_path)
+    destination = project_root / "data" / "new" / "train_backup.csv"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    TRAIN_DATA.to_csv(destination, index=False)
 
-    for col in TRAIN_DATA.columns:
-        describe_column(TRAIN_DATA, col)
-
+    describe_column(TRAIN_DATA,"Monthly_Balance")
+    #for col in TRAIN_DATA.columns:
+    #    describe_column(TRAIN_DATA, col)
+    
+    clean_numerical_field(TRAIN_DATA, "Monthly_Balance", "Monthly_Balance", replace_value=",__-333333333333333333333333333__", datatype=float)
+    describe_column(TRAIN_DATA,"Monthly_Balance")
     # for col in TRAIN_DATA.columns:
     #     if col.dtype in ("int64", "float64"):
     #         clean_numerical_field(TRAIN_DATA, ...)

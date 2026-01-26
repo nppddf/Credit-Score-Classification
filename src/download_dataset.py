@@ -17,11 +17,11 @@ if __name__ == "__main__":
 
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
-    data_path = project_root / "data" / "raw" / "train.csv"
+    data_path = project_root / "data" / "raw"
     
     if not data_path.exists():
         data_path.mkdir(parents=True, exist_ok=True)
-        DATA_DIR = Path("data_path")
+        DATA_DIR = Path(data_path)
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         DATASET_NAME = "parisrohan/credit-score-classification"
         
