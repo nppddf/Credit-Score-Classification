@@ -1,6 +1,7 @@
 import numpy as np
 import statistics as stats
 import pandas as pd
+from pathlib import Path
 
 
 def describe_column(df, column):
@@ -91,7 +92,19 @@ def clean_numerical_field(
 
 
 if __name__ == "__main__":
-    TRAIN_DATA = pd.read_csv("data/raw/train.csv")
+    # Get the project root directory (parent of src/)
+    # Use resolve() to get absolute path, works regardless of current working directory
+    script_path = Path(__file__).resolve()
+    project_root = script_path.parent.parent
+    data_path = project_root / "data" / "raw" / "train.csv"
+    
+    if not data_path.exists():
+        raise FileNotFoundError(
+            f"Dataset not found at {data_path}. "
+            f"Please run 'python src/download_dataset.py' first to download the dataset."
+        )
+    
+    TRAIN_DATA = pd.read_csv(data_path)
 
     for col in TRAIN_DATA.columns:
         describe_column(TRAIN_DATA, col)
