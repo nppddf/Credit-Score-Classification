@@ -62,7 +62,8 @@ def fix_inconsistent_values(df, groupby, column):
         lambda x: x.median() if len(x) > 0 else np.nan
     )
     df[column] = col.fillna(mode_by_group)
-    df[column].fillna(df[column].median(), inplace=True)
+    df[column] = df[column].fillna(df[column].median())
+
 
     print(
         "\nAfter Cleaning Min, Max Values:",
@@ -94,6 +95,78 @@ def clean_numerical_field(
 
     fix_inconsistent_values(df, groupby, column)
 
+PREPROCESSING_STEPS = []
+
+def preprocessing_step(func):
+    PREPROCESSING_STEPS.append(func)
+    return func
+
+
+def register_step(clean_func, groupby, column, **kwargs):
+    @preprocessing_step
+    def _step(df):
+        clean_func(df, groupby, column, **kwargs)
+
+    return _step
+
+
+register_step(
+    clean_numerical_field,
+    "Monthly_Balance",
+    "Monthly_Balance",
+    replace_value=",__-333333333333333333333333333__",
+    datatype=float,
+)
+
+register_step(
+    clean_categorical_field,
+    "SSN",
+    "SSN",
+    replace_value="#F%$D@*&8",
+)
+
+register_step(
+    clean_categorical_field,
+    "Occupation",
+    "Occupation",
+    replace_value="_______",
+)
+
+register_step(
+    clean_categorical_field,
+    "Amount_invested_monthly",
+    "Amount_invested_monthly",
+    replace_value="__10000__",
+)
+
+register_step(
+    clean_categorical_field,
+    "Changed_Credit_Limit",
+    "Changed_Credit_Limit",
+    replace_value="_",
+)
+
+register_step(
+    clean_categorical_field,
+    "Credit_Mix",
+    "Credit_Mix",
+    replace_value="_",
+)
+
+register_step(
+    clean_numerical_field,
+    "Num_of_Loan",
+    "Num_of_Loan",
+    strip="_",
+    datatype=float,
+)
+
+register_step(
+    clean_categorical_field,
+    "Payment_Behaviour",
+    "Payment_Behaviour",
+    replace_value="!@9#%8",
+)
 
 if __name__ == "__main__":
     script_path = Path(__file__).resolve()
@@ -110,14 +183,14 @@ if __name__ == "__main__":
     
     destination = project_root / "data" / "new" / "train_backup.csv"
     destination.parent.mkdir(parents=True, exist_ok=True)
-    TRAIN_DATA.to_csv(destination, index=False)
 
-    describe_column(TRAIN_DATA,"Monthly_Balance")
     #for col in TRAIN_DATA.columns:
-    #    describe_column(TRAIN_DATA, col)
-    
-    clean_numerical_field(TRAIN_DATA, "Monthly_Balance", "Monthly_Balance", replace_value=",__-333333333333333333333333333__", datatype=float)
-    describe_column(TRAIN_DATA,"Monthly_Balance")
+    #    describe_column(RAW_DATA, col)
+    for step in PREPROCESSING_STEPS:
+        step(TRAIN_DATA)
+
+    TRAIN_DATA.to_csv(destination, index=False)    
+    #describe_column(TRAIN_DATA,"Occupation")
     # for col in TRAIN_DATA.columns:
     #     if col.dtype in ("int64", "float64"):
     #         clean_numerical_field(TRAIN_DATA, ...)
