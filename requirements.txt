@@ -1,0 +1,5 @@
+python-dotenv
+kaggle
+pandas
+numpy
+matplotlib
