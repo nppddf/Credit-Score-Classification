@@ -3,7 +3,12 @@ import statistics as stats
 import pandas as pd
 from pathlib import Path
 
-from preprocessing_config import STEP_CONFIGS
+from preprocessing_config import (
+    STEP_CONFIGS,
+    PREPROCESSING_STEPS,
+    add_typical_numeric_columns_to_config,
+    register_step,
+)
 
 
 def describe_column(df, column):
@@ -23,6 +28,14 @@ def describe_column(df, column):
     print(df[column].value_counts())
 
 
+def clean_categorical_field(df, groupby, column, replace_value=None):
+    if replace_value is not None:
+        df[column] = df[column].replace(replace_value, np.nan)
+        print(f"\nGarbage value {replace_value} is replaced with np.nan")
+
+    fill_missing_with_group_mode(df, groupby, column)
+
+
 def fill_missing_with_group_mode(df, groupby, column):
     print(
         "\nNo. of missing values before filling with group mode:",
@@ -38,15 +51,42 @@ def fill_missing_with_group_mode(df, groupby, column):
     )
 
 
-def clean_categorical_field(df, groupby, column, replace_value=None):
+def clean_numerical_field(
+    df,
+    groupby,
+    column,
+    strip=None,
+    datatype=None,
+    replace_value=None,
+    min_value=None,
+    max_value=None,
+):
     if replace_value is not None:
         df[column] = df[column].replace(replace_value, np.nan)
-        print(f"\nGarbage value {replace_value} is replaced with np.nan")
+        print(f"Garbage value {replace_value} is replaced with np.nan")
 
-    fill_missing_with_group_mode(df, groupby, column)
+    is_string_col = pd.api.types.is_string_dtype(df[column])
+    if is_string_col and strip is not None:
+        df[column] = df[column].astype("string").str.strip(strip)
+        print(f"Trailing & leading {strip} are removed")
+
+    if datatype is not None:
+        df[column] = pd.to_numeric(df[column], errors="coerce")
+        print(f"Datatype of {column} is changed to {datatype}")
+    elif is_string_col:
+        df[column] = pd.to_numeric(df[column], errors="coerce")
+        print(f"Column {column} converted to numeric type")
+
+    fix_inconsistent_values(
+        df,
+        groupby,
+        column,
+        min_value=min_value,
+        max_value=max_value,
+    )
 
 
-def fix_inconsistent_values(df, groupby, column):
+def fix_inconsistent_values(df, groupby, column, min_value=None, max_value=None):
     print(
         "\nExisting Min, Max Values:", df[column].apply([min, max]), sep="\n", end="\n"
     )
@@ -55,12 +95,15 @@ def fix_inconsistent_values(df, groupby, column):
     modes = df_dropped.apply(lambda x: stats.mode(x))
     mini, maxi = modes.min(), modes.max()
 
+    lower_bound = min_value if min_value is not None else mini
+    upper_bound = max_value if max_value is not None else maxi
+
     col = df[column].apply(
-        lambda x: np.nan if ((x < mini) | (x > maxi) | (x < 0)) else x
+        lambda x: np.nan if ((x < lower_bound) | (x > upper_bound) | (x < 0)) else x
     )
 
     mode_by_group = df.groupby(groupby)[column].transform(
-        lambda x: x.median() if len(x) > 0 else np.nan
+        lambda x: x.mode() if len(x) > 0 else np.nan
     )
     df[column] = col.fillna(mode_by_group)
     df[column] = df[column].fillna(df[column].median())
@@ -75,47 +118,12 @@ def fix_inconsistent_values(df, groupby, column):
     print("\nNo. of Null values after Cleaning:", df[column].isnull().sum())
 
 
-def clean_numerical_field(
-    df, groupby, column, strip=None, datatype=None, replace_value=None
-):
-    if replace_value is not None:
-        df[column] = df[column].replace(replace_value, np.nan)
-        print(f"\nGarbage value {replace_value} is replaced with np.nan")
-
-    if df[column].dtype == object and strip is not None:
-        df[column] = df[column].str.strip(strip)
-        print(f"\nTrailing & leading {strip} are removed")
-
-    if datatype is not None:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
-        print(f"\nDatatype of {column} is changed to {datatype}")
-    elif df[column].dtype == object:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
-        print(f"\nColumn {column} converted to numeric type")
-
-    fix_inconsistent_values(df, groupby, column)
-
-
-PREPROCESSING_STEPS = []
-
-
-def preprocessing_step(func):
-    PREPROCESSING_STEPS.append(func)
-    return func
-
-
-def register_step(clean_func, groupby, column, **kwargs):
-    @preprocessing_step
-    def _step(df):
-        clean_func(df, groupby, column, **kwargs)
-
-    return _step
-
-
 _FUNC_REGISTRY = {
     "clean_numerical_field": clean_numerical_field,
     "clean_categorical_field": clean_categorical_field,
 }
+
+add_typical_numeric_columns_to_config()
 
 for cfg in STEP_CONFIGS:
     func_name = cfg["clean_func"]
@@ -134,21 +142,14 @@ if __name__ == "__main__":
             f"Dataset not found at {data_path}. "
             f"Please run 'python src/download_dataset.py' first to download the dataset."
         )
+
     RAW_DATA = pd.read_csv(data_path, low_memory=False)
     TRAIN_DATA = RAW_DATA.copy()
 
-    destination = project_root / "data" / "new" / "train_backup.csv"
+    destination = project_root / "data" / "processed" / "train_processed.csv"
     destination.parent.mkdir(parents=True, exist_ok=True)
 
-    # for col in TRAIN_DATA.columns:
-    #     describe_column(RAW_DATA, col)
     for step in PREPROCESSING_STEPS:
         step(TRAIN_DATA)
 
     TRAIN_DATA.to_csv(destination, index=False)
-    # describe_column(TRAIN_DATA,"Occupation")
-    # for col in TRAIN_DATA.columns:
-    #     if col.dtype in ("int64", "float64"):
-    #         clean_numerical_field(TRAIN_DATA, ...)
-    #     else:
-    #         clean_categorical_field(TRAIN_DATA, ...)
