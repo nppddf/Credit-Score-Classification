@@ -2,7 +2,7 @@
 
 A machine learning project for classifying credit scores using various classification algorithms. This project includes data preprocessing, exploratory data analysis, model training, and evaluation pipelines.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -17,11 +17,11 @@ A machine learning project for classifying credit scores using various classific
 - [Contributing](#contributing)
 - [License](#license)
 
-## 🎯 Overview
+## Overview
 
 This project aims to build and evaluate machine learning models for credit score classification. The system processes credit-related features to predict creditworthiness, which can be used by financial institutions for risk assessment and decision-making.
 
-## ✨ Features
+## Features
 
 - **Data Download**: Automated dataset download from Kaggle
 - **Data Preprocessing**: Comprehensive data cleaning and feature engineering
@@ -29,7 +29,7 @@ This project aims to build and evaluate machine learning models for credit score
 - **Model Training**: Multiple classification algorithms for comparison
 - **Model Evaluation**: Performance metrics and visualization
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Credit-Score-Classification/
@@ -47,13 +47,13 @@ Credit-Score-Classification/
 └── README.md                 # Project documentation
 ```
 
-## 🔧 Prerequisites
+## Prerequisites
 
 - Python 3.8 or higher
 - pip (Python package manager)
 - Kaggle API credentials (for dataset download)
 
-## 📦 Installation
+## Installation
 
 1. **Clone the repository**
    ```bash
@@ -82,7 +82,7 @@ Credit-Score-Classification/
      cp .env.example .env
      ```
 
-## 🚀 Usage
+## Usage
 
 ### Download Dataset
 
@@ -126,7 +126,7 @@ For interactive development and analysis:
 jupyter notebook notebooks/
 ```
 
-## 📊 Dataset
+## Dataset
 
 The project uses the Credit Scoring Dataset from Kaggle:
 - **Dataset**: `maksimkotenkov/credit-scoring-dataset`
@@ -157,7 +157,7 @@ This notebook includes:
 - Performance metrics visualization
 - Feature importance analysis
 
-## 🤖 Model Training
+## Model Training
 
 The training pipeline includes:
 
@@ -169,7 +169,7 @@ The training pipeline includes:
 6. **Evaluation**: Calculate metrics (accuracy, precision, recall, F1-score, ROC-AUC)
 7. **Saving**: Save trained models for future use
 
-## 📈 Results
+## Results
 
 [Add model performance results, metrics, and visualizations here]
 
@@ -180,14 +180,6 @@ Example metrics to include:
 - Confusion matrices
 - Feature importance plots
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Dataset provider: [maksimkotenkov](https://www.kaggle.com/maksimkotenkov)
-- Kaggle for hosting the dataset
-- Open source community for the amazing tools and libraries
-
----
