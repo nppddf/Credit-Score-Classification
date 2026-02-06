@@ -1,185 +1,132 @@
 # Credit Score Classification
 
-A machine learning project for classifying credit scores using various classification algorithms. This project includes data preprocessing, exploratory data analysis, model training, and evaluation pipelines.
+Проект по классификации кредитного скоринга: от загрузки датасета и очистки данных до обучения и сравнения моделей. Основная цель — построить воспроизводимый пайплайн подготовки данных и получить базовую метрику качества для моделей классификации.
 
-## Table of Contents
+## Обзор
 
-- [Overview](#overview)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Dataset](#dataset)
-- [Notebooks](#notebooks)
-- [Model Training](#model-training)
-- [Results](#results)
-- [Contributing](#contributing)
-- [License](#license)
+Пайплайн проекта:
+1. Загрузка датасета с Kaggle.
+2. Очистка и приведение данных к корректным типам.
+3. Сохранение обработанного набора в `data/processed/`.
+4. EDA и моделирование в ноутбуках.
 
-## Overview
+## Архитектура и поток данных
 
-This project aims to build and evaluate machine learning models for credit score classification. The system processes credit-related features to predict creditworthiness, which can be used by financial institutions for risk assessment and decision-making.
+- **Слой данных**: сырые данные скачиваются в `data/raw/` и не изменяются.
+- **Слой обработки**: скрипт `src/preprocessing.py` очищает данные и сохраняет итоговый CSV в `data/processed/`.
+- **Слой анализа и моделирования**: ноутбуки в `notebooks/` используют обработанный CSV для EDA и обучения.
 
-## Features
+Архитектура организована по принципу разделения ответственности: каждый этап (загрузка, предобработка, анализ/модели) живет в отдельном модуле/ноутбуке.
 
-- **Data Download**: Automated dataset download from Kaggle
-- **Data Preprocessing**: Comprehensive data cleaning and feature engineering
-- **Exploratory Data Analysis**: Interactive notebooks for data exploration
-- **Model Training**: Multiple classification algorithms for comparison
-- **Model Evaluation**: Performance metrics and visualization
+## Технологии и обоснование выбора
 
-## Project Structure
+- **Python** — основной язык, хорошо подходит для анализа данных и ML.
+- **pandas, numpy** — стандарт де-факто для табличных данных и численных операций.
+- **kaggle (Kaggle API)** — автоматизация получения датасета и воспроизводимость источника данных.
+- **python-dotenv** — загрузка переменных окружения через `.env` для удобной настройки локального окружения.
+- **scikit-learn** — набор базовых алгоритмов и утилит (`LabelEncoder`, `MinMaxScaler`, `train_test_split`, `cross_validate`) для воспроизводимого ML.
+- **CatBoost** — современная модель градиентного бустинга, часто сильная на табличных данных.
+- **matplotlib, seaborn** — визуализации и EDA.
+- **Jupyter Notebook** — интерактивная разработка и анализ результатов.
+
+## Паттерны и ключевые решения
+
+- **Конфигурация очистки через `STEP_CONFIGS`**: список шагов задается в `src/preprocessing_config.py`, а функции очистки регистрируются через `register_step`. Это снижает связанность и позволяет добавлять новые шаги без переписывания пайплайна.
+- **Функциональная регистрация шагов**: декоратор `@preprocessing_step` и реестр `PREPROCESSING_STEPS` формируют последовательность обработки данных в одном месте.
+- **Групповая импутация модой**: для категориальных и числовых признаков используется восстановление пропусков по моде внутри групп, чтобы сохранить структуру данных внутри похожих пользователей.
+- **Очистка аномалий по диапазонам**: выбросы заменяются на `NaN` с последующим заполнением модой/медианой — это стабилизирует распределения и уменьшает шум.
+- **Stratified split и фиксированный `RANDOM_STATE`**: обеспечивает воспроизводимость и баланс классов в выборках.
+- **Cross-validation**: метрики считаются на 5 фолдах, чтобы оценка качества была устойчивой.
+
+## Структура проекта
 
 ```
 Credit-Score-Classification/
-├── data/                      # Dataset directory (created after download)
-├── notebooks/                 # Jupyter notebooks
-│   ├── eda.ipynb             # Exploratory Data Analysis
-│   └── modeling.ipynb        # Model development and evaluation
-├── src/                       # Source code
-│   ├── download_dataset.py   # Dataset download script
-│   ├── preprocessing.py      # Data preprocessing utilities
-│   └── train.py              # Model training script
-├── .env.example              # Environment variables template
-├── .gitignore                # Git ignore rules
-├── LICENSE                   # License file
-└── README.md                 # Project documentation
+├── data/                      # Данные (создается после скачивания)
+│   ├── raw/                   # Сырые данные
+│   └── processed/             # Обработанные данные
+├── notebooks/                 # Jupyter ноутбуки
+│   ├── eda.ipynb              # Исследовательский анализ данных
+│   └── modeling.ipynb         # Моделирование и оценка
+├── src/                       # Код пайплайна
+│   ├── download_dataset.py    # Загрузка датасета
+│   ├── preprocessing.py       # Очистка и подготовка данных
+│   └── preprocessing_config.py# Конфигурация шагов очистки
+├── .env.example               # Шаблон для переменных окружения
+├── requirements.txt           # Зависимости
+├── LICENSE
+└── README.md
 ```
 
-## Prerequisites
+## Датасет
 
-- Python 3.8 or higher
-- pip (Python package manager)
-- Kaggle API credentials (for dataset download)
+Источник: Kaggle — `parisrohan/credit-score-classification`.
 
-## Installation
+Примеры признаков:
+- Идентификаторы: `ID`, `Customer_ID`.
+- Демография: `Age`, `Occupation`.
+- Финансовые показатели: `Annual_Income`, `Monthly_Inhand_Salary`, `Outstanding_Debt`.
+- Кредитная история: `Num_of_Loan`, `Credit_Utilization_Ratio`, `Delay_from_due_date`.
+- Целевая переменная: `Credit_Score`.
 
-1. **Clone the repository**
+## Подготовка окружения
+
+1. Создать виртуальное окружение (рекомендуется):
    ```bash
-   git clone https://github.com/yourusername/Credit-Score-Classification.git
-   cd Credit-Score-Classification
+   python3 -m venv venv
+   source venv/bin/activate
    ```
 
-2. **Create a virtual environment** (recommended)
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
+2. Установить зависимости:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Set up Kaggle API credentials**
-   - Sign up for a Kaggle account at https://www.kaggle.com/
-   - Go to your account settings and create an API token
-   - Download `kaggle.json` and place it in `~/.kaggle/` directory
-   - Alternatively, set `KAGGLE_API_TOKEN` environment variable
-   - Copy `.env.example` to `.env` and add your credentials:
-     ```bash
-     cp .env.example .env
-     ```
+3. Для ноутбуков и моделирования дополнительно нужны:
+   - `scikit-learn`
+   - `seaborn`
+   - `catboost`
 
-## Usage
+## Загрузка данных
 
-### Download Dataset
-
-Download the credit scoring dataset from Kaggle:
+Скрипт использует Kaggle API. Убедитесь, что `kaggle.json` доступен в `~/.kaggle/` или переменные окружения настроены через `.env`:
 
 ```bash
-python src/download_dataset.py
+python3 src/download_dataset.py
 ```
 
-The dataset will be downloaded to the `data/` directory.
+Сырые данные появятся в `data/raw/`.
 
-### Run Exploratory Data Analysis
+## Предобработка данных
 
-Open and run the EDA notebook:
+```bash
+python3 src/preprocessing.py
+```
+
+Результат: `data/processed/train_processed.csv`.
+
+## Моделирование
+
+Основной ML-пайплайн реализован в ноутбуке:
+
+```bash
+jupyter notebook notebooks/modeling.ipynb
+```
+
+В ноутбуке:
+- удаляются нерелевантные признаки (`ID`, `Customer_ID`, `Month`, `Name`, `SSN`);
+- категориальные признаки кодируются (`LabelEncoder`);
+- числовые признаки нормализуются (`MinMaxScaler`);
+- сравниваются модели `DecisionTree`, `RandomForest`, `CatBoost` через `cross_validate`.
+
+## EDA
 
 ```bash
 jupyter notebook notebooks/eda.ipynb
 ```
 
-### Preprocess Data
+EDA показывает распределения до/после очистки и подтверждает эффективность предобработки.
 
-Run the preprocessing script:
+## Лицензия
 
-```bash
-python src/preprocessing.py
-```
-
-### Train Models
-
-Train classification models:
-
-```bash
-python src/train.py
-```
-
-### Use Jupyter Notebooks
-
-For interactive development and analysis:
-
-```bash
-jupyter notebook notebooks/
-```
-
-## Dataset
-
-The project uses the Credit Scoring Dataset from Kaggle:
-- **Dataset**: `maksimkotenkov/credit-scoring-dataset`
-- **Source**: [Kaggle](https://www.kaggle.com/datasets/maksimkotenkov/credit-scoring-dataset)
-
-### Dataset Description
-
-[Add description of the dataset features, target variable, and data characteristics here]
-
-## 📓 Notebooks
-
-### Exploratory Data Analysis (`notebooks/eda.ipynb`)
-
-This notebook contains:
-- Data loading and initial inspection
-- Statistical summaries
-- Data visualization
-- Feature analysis
-- Missing value analysis
-- Correlation analysis
-
-### Modeling (`notebooks/modeling.ipynb`)
-
-This notebook includes:
-- Model selection and comparison
-- Hyperparameter tuning
-- Model training and evaluation
-- Performance metrics visualization
-- Feature importance analysis
-
-## Model Training
-
-The training pipeline includes:
-
-1. **Data Loading**: Load and validate the dataset
-2. **Preprocessing**: Handle missing values, encode categorical features, scale numerical features
-3. **Feature Engineering**: Create new features if needed
-4. **Model Selection**: Compare multiple algorithms (e.g., Logistic Regression, Random Forest, XGBoost)
-5. **Training**: Train selected models with cross-validation
-6. **Evaluation**: Calculate metrics (accuracy, precision, recall, F1-score, ROC-AUC)
-7. **Saving**: Save trained models for future use
-
-## Results
-
-[Add model performance results, metrics, and visualizations here]
-
-Example metrics to include:
-- Accuracy scores
-- Precision, Recall, F1-score
-- ROC-AUC scores
-- Confusion matrices
-- Feature importance plots
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License, подробнее в `LICENSE`.

@@ -3,3 +3,6 @@ kaggle
 pandas
 numpy
 matplotlib
+statistics
+seaborn
+catboost
