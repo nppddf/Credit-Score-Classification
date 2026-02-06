@@ -118,6 +118,17 @@ def fix_inconsistent_values(df, groupby, column, min_value=None, max_value=None)
     print("\nNo. of Null values after Cleaning:", df[column].isnull().sum())
 
 
+def convert_age_to_months(x):
+    if pd.isna(x):
+        return None
+
+    parts = x.split()
+    years = int(parts[0])
+    months = int(parts[3])
+
+    return years * 12 + months
+
+
 _FUNC_REGISTRY = {
     "clean_numerical_field": clean_numerical_field,
     "clean_categorical_field": clean_categorical_field,
@@ -151,5 +162,10 @@ if __name__ == "__main__":
 
     for step in PREPROCESSING_STEPS:
         step(TRAIN_DATA)
+
+    TRAIN_DATA["Credit_History_Age"] = TRAIN_DATA["Credit_History_Age"].apply(
+        convert_age_to_months
+    )
+    print("\nColumn 'Credit_History_Age' has cleaned\n")
 
     TRAIN_DATA.to_csv(destination, index=False)

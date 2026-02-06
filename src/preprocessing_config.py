@@ -1,4 +1,4 @@
-from numpy import float64
+from numpy import float64, int64
 
 
 STEP_CONFIGS = [
@@ -7,7 +7,7 @@ STEP_CONFIGS = [
         "groupby": "Age",
         "column": "Age",
         "strip": "_",
-        "datatype": int,
+        "datatype": int64,
         "min_value": 0,
         "max_value": 100,
     },
@@ -46,7 +46,7 @@ STEP_CONFIGS = [
         "groupby": "Monthly_Balance",
         "column": "Monthly_Balance",
         "replace_value": ",__-333333333333333333333333333__",
-        "datatype": float,
+        "datatype": float64,
     },
 ]
 
@@ -59,7 +59,9 @@ TYPICAL_NUMERIC_COLUMNS = [
     "Num_of_Loan",
     "Delay_from_due_date",
     "Changed_Credit_Limit",
+    "Num_of_Delayed_Payment",
     "Num_Credit_Inquiries",
+    "Outstanding_Debt",
     "Credit_Utilization_Ratio",
     "Total_EMI_per_month",
     "Amount_invested_monthly",
