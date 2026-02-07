@@ -42,18 +42,19 @@
 
 ```
 Credit-Score-Classification/
-├── data/                      # Данные (создается после скачивания)
-│   ├── raw/                   # Сырые данные
-│   └── processed/             # Обработанные данные
-├── notebooks/                 # Jupyter ноутбуки
-│   ├── eda.ipynb              # Исследовательский анализ данных
-│   └── modeling.ipynb         # Моделирование и оценка
-├── src/                       # Код пайплайна
-│   ├── download_dataset.py    # Загрузка датасета
-│   ├── preprocessing.py       # Очистка и подготовка данных
-│   └── preprocessing_config.py# Конфигурация шагов очистки
-├── .env.example               # Шаблон для переменных окружения
-├── requirements.txt           # Зависимости
+├── data/                       # Данные (создается после скачивания)
+│   ├── raw/                    # Сырые данные
+│   └── processed/              # Обработанные данные
+├── notebooks/                  # Jupyter ноутбуки
+│   ├── eda.ipynb               # Исследовательский анализ данных
+│   └── modeling.ipynb          # Моделирование и оценка
+├── src/                        # Код пайплайна
+│   ├── download_dataset.py     # Загрузка датасета
+│   ├── preprocessing.py        # Очистка и подготовка данных
+│   ├── preprocessing_config.py # Конфигурация шагов очистки
+│   └── train.py                # Тренировка и сохранение модели
+├── .env.example                # Шаблон для переменных окружения
+├── requirements.txt            # Зависимости
 ├── LICENSE
 └── README.md
 ```
