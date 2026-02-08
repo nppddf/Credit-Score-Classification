@@ -1,84 +1,132 @@
+import logging
 import pandas as pd
 
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_validate
-from sklearn.metrics import classification_report, confusion_matrix
-
 from sklearn.ensemble import RandomForestClassifier
 
-from sklearn.pipeline import Pipeline
+from pathlib import Path
 import joblib
 
-RANDOM_STATE = 42
-TEST_SIZE = 0.2
+from config import load_config
+
+
+CONFIG = load_config()
+TRAIN_CONFIG = CONFIG.get("train", {})
+
+RANDOM_STATE = TRAIN_CONFIG["random_state"]
+NUMBER_OF_FOLDS = TRAIN_CONFIG["number_of_folds"]
+
+CATEGORICAL = TRAIN_CONFIG["categorical"]
+DROP = TRAIN_CONFIG["drop"]
+
+logger = logging.getLogger(__name__)
 
 
 def drop_columns(dataframe):
-    columns_to_drop = [
-        "ID",
-        "Customer_ID",
-        "Month",
-        "Name",
-        "SSN",
-    ]
-
-    dataframe.drop(columns_to_drop, axis=1, inplace=True)
+    dataframe.drop(DROP, axis=1, inplace=True)
 
 
-def encoding_labels(dataframe):
-    categorical_columns = [
-        "Occupation",
-        "Type_of_Loan",
-        "Credit_Mix",
-        "Payment_of_Min_Amount",
-        "Payment_Behaviour",
-        "Credit_Score",
-    ]
+def prepare_xy(dataframe):
+    drop_columns(dataframe)
 
-    label_encoder = LabelEncoder()
-    for column in categorical_columns:
-        dataframe[column] = label_encoder.fit_transform(dataframe[column])
+    y_enc = LabelEncoder()
+    logger.info("Enconding the data.")
+    y = y_enc.fit_transform(dataframe["Credit_Score"])
+    logger.info("Enconding completed.")
+
+    X = dataframe.drop(columns=["Credit_Score"])
+    return X, y, y_enc
 
 
-def fit_random_forest(X_train, y_train):
-    random_forest = RandomForestClassifier()
+def createPreprocessor():
+    preprocessor = ColumnTransformer(
+        transformers=[
+            (
+                "cat",
+                OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                CATEGORICAL,
+            ),
+        ],
+        remainder="passthrough",
+    )
 
+    return preprocessor
+
+
+def createModelPipeline(preprocessor):
+    model = Pipeline(
+        steps=[
+            ("prep", preprocessor),
+            ("rf", RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1)),
+        ]
+    )
+
+    return model
+
+
+def createScoring():
     scoring = {
         "accuracy": "accuracy",
         "precision": "precision_macro",
         "recall": "recall_macro",
     }
 
-    scores = cross_validate(
-        random_forest, X_train, y_train, cv=5, scoring=scoring, n_jobs=-1
-    )
+    return scoring
 
-    avg_accuracy = scores["test_accuracy"].mean()
-    avg_precision = scores["test_precision"].mean()
-    avg_recall = scores["test_recall"].mean()
 
-    print("-----------------------")
-    print(f"Average Accuracy: {avg_accuracy:.4f}")
-    print(f"Average Precision: {avg_precision:.4f}")
-    print(f"Average Recall: {avg_recall:.4f}")
-    print("-----------------------")
+def validate_model(model, X, y, cv, scoring):
+    logger.info("Validating the model.")
+    scores = cross_validate(model, X, y, cv=cv, scoring=scoring)
+    logger.info("Validation completed.")
 
-    joblib.dump(random_forest, "../models/model.joblib")
+    return scores
+
+
+def printMetrics(scores):
+    logger.info("-----------------------")
+    logger.info("Average Accuracy: %.4f", scores["test_accuracy"].mean())
+    logger.info("Average Precision: %.4f", scores["test_precision"].mean())
+    logger.info("Average Recall: %.4f", scores["test_recall"].mean())
+    logger.info("-----------------------")
+
+
+def fitModel(model, X, y):
+    logger.info("Fitting the model.")
+    model.fit(X, y)
+    logger.info("Fitting completed.")
+
+
+def savePipeline(model):
+    model_path = project_root / "models" / "model.joblib"
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, model_path)
+    logger.info("Model saved.")
+
+
+def fit_random_forest(X, y, project_root):
+    preprocessor = createPreprocessor()
+    model = createModelPipeline(preprocessor)
+    scoring = createScoring()
+
+    scores = validate_model(model, X, y, NUMBER_OF_FOLDS, scoring)
+    printMetrics(scores)
+
+    fitModel(model, X, y)
+
+    savePipeline(model)
 
 
 if __name__ == "__main__":
-    train_data = pd.read_csv("../data/processed/train_processed.csv")
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    drop_columns(train_data)
-    encoding_labels(train_data)
+    script_path = Path(__file__).resolve()
+    project_root = script_path.parent.parent
+    data_path = project_root / "data" / "processed" / "train_processed.csv"
 
-    X = train_data.drop("Credit_Score", axis=1)
-    y = train_data["Credit_Score"]
+    train_data = pd.read_csv(data_path)
+    X, y, y_enc = prepare_xy(train_data)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
-    )
-
-    fit_random_forest(X_train, y_train)
+    fit_random_forest(X, y, project_root)

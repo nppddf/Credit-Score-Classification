@@ -6,3 +6,4 @@ matplotlib
 statistics
 seaborn
 catboost
+pyyaml

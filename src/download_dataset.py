@@ -1,30 +1,47 @@
+import logging
 from pathlib import Path
+
 from kaggle.api.kaggle_api_extended import KaggleApi
-import os
-from dotenv import load_dotenv
-import kaggle
+
+from config import load_config
+
+
+CONFIG = load_config()
+DATASET_CONFIG = CONFIG.get("download_dataset", {})
+DATASET_NAME = DATASET_CONFIG["dataset_name"]
+TEST_CSV_NAME = DATASET_CONFIG["test_csv_name"]
+TRAIN_CSV_NAME = DATASET_CONFIG["train_csv_name"]
+
+logger = logging.getLogger(__name__)
 
 
 def download_dataset(dataset: str, dest: Path) -> None:
     api = KaggleApi()
-    api.authenticate()
+
+    try:
+        api.authenticate()
+    except Exception as e:
+        raise RuntimeError("Kaggle API credentials not found") from e
+
     api.dataset_download_files(dataset, path=dest, unzip=True)
 
 
 if __name__ == "__main__":
-    load_dotenv()
-    KAGGLE_API_TOKEN = os.getenv("KAGGLE_API_TOKEN")
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     script_path = Path(__file__).resolve()
     project_root = script_path.parent.parent
     data_path = project_root / "data" / "raw"
-    
-    if not data_path.exists():
-        data_path.mkdir(parents=True, exist_ok=True)
+
+    if (
+        data_path.exists()
+        and (data_path / TEST_CSV_NAME).exists()
+        and (data_path / TRAIN_CSV_NAME).exists()
+    ):
+        logger.info("Dataset already exists in %s", data_path)
+
+    else:
         DATA_DIR = Path(data_path)
         DATA_DIR.mkdir(parents=True, exist_ok=True)
-        DATASET_NAME = "parisrohan/credit-score-classification"
-        
+
         download_dataset(DATASET_NAME, DATA_DIR)
-    else:
-        print(f"Dataset already exists in {data_path}")
