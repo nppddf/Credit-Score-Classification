@@ -58,19 +58,62 @@ preprocessing:
         value: "!@9#%8"
       - fill_mode
     Annual_Income: *typical_numeric
-    Monthly_Inhand_Salary: *typical_numeric
+    Monthly_Inhand_Salary:
+      - op: strip
+        chars: "_"
+      - to_numeric
+      - op: bounds
+        min_value: 0
+      - op: cast
+        dtype: "float64"
+      - op: replace
+        value: "_"
     Num_Bank_Accounts: *typical_numeric
     Num_Credit_Card: *typical_numeric
     Interest_Rate: *typical_numeric
     Num_of_Loan: *typical_numeric
     Delay_from_due_date: *typical_numeric
-    Changed_Credit_Limit: *typical_numeric
-    Num_of_Delayed_Payment: *typical_numeric
+    Changed_Credit_Limit:
+      - op: strip
+        chars: "_"
+      - to_numeric
+      - op: bounds
+        min_value: 0
+      - op: cast
+        dtype: "float64"
+      - op: replace
+        value: "_"
+    Num_of_Delayed_Payment:
+      - op: strip
+        chars: "_"
+      - to_numeric
+      - op: bounds
+        min_value: 0
+      - op: cast
+        dtype: "float64"
     Num_Credit_Inquiries: *typical_numeric
     Outstanding_Debt: *typical_numeric
     Credit_Utilization_Ratio: *typical_numeric
     Total_EMI_per_month: *typical_numeric
-    Amount_invested_monthly: *typical_numeric
-    Monthly_Balance: *typical_numeric
+    Amount_invested_monthly:
+      - op: strip
+        chars: "_"
+      - to_numeric
+      - op: bounds
+        min_value: 0
+      - op: cast
+        dtype: "float64"
+      - op: replace
+        value: "__10000__"
+    Monthly_Balance:
+      - op: strip
+        chars: "_"
+      - to_numeric
+      - op: bounds
+        min_value: 0
+      - op: cast
+        dtype: "float64"
+      - op: replace
+        value: "__-333333333333333333333333333__"
     Credit_History_Age:
       - convert_age_to_months
