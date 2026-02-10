@@ -20,41 +20,57 @@ train:
     - "SSN"
 
 preprocessing:
-  numeric_clip_quantiles:
-    lower: 0.01
-    upper: 0.99
-  step_configs:
-    - clean_func: "clean_numerical_field"
-      column: "Age"
-      strip: "_"
-      datatype: "int64"
-      min_value: 0
-      max_value: 100
-    - clean_func: "clean_categorical_field"
-      column: "SSN"
-      replace_value: "#F%$D@*&8"
-    - clean_func: "clean_categorical_field"
-      column: "Occupation"
-      replace_value: "_______"
-    - clean_func: "clean_categorical_field"
-      column: "Credit_Mix"
-      replace_value: "_"
-    - clean_func: "clean_categorical_field"
-      column: "Payment_Behaviour"
-      replace_value: "!@9#%8"
-  typical_numeric_columns:
-    - "Annual_Income"
-    - "Monthly_Inhand_Salary"
-    - "Num_Bank_Accounts"
-    - "Num_Credit_Card"
-    - "Interest_Rate"
-    - "Num_of_Loan"
-    - "Delay_from_due_date"
-    - "Changed_Credit_Limit"
-    - "Num_of_Delayed_Payment"
-    - "Num_Credit_Inquiries"
-    - "Outstanding_Debt"
-    - "Credit_Utilization_Ratio"
-    - "Total_EMI_per_month"
-    - "Amount_invested_monthly"
-    - "Monthly_Balance"
+  column_templates:
+    typical_numeric: &typical_numeric
+      - op: strip
+        chars: "_"
+      - to_numeric
+      - op: bounds
+        min_value: 0
+      - fill_median
+      - op: cast
+        dtype: "float64"
+  columns:
+    Age:
+      - op: strip
+        chars: "_"
+      - to_numeric
+      - op: bounds
+        min_value: 0
+        max_value: 100
+      - fill_median
+      - op: cast
+        dtype: "int64"
+    SSN:
+      - op: replace
+        value: "#F%$D@*&8"
+      - fill_mode
+    Occupation:
+      - op: replace
+        value: "_______"
+      - fill_mode
+    Credit_Mix:
+      - op: replace
+        value: "_"
+      - fill_mode
+    Payment_Behaviour:
+      - op: replace
+        value: "!@9#%8"
+      - fill_mode
+    Annual_Income: *typical_numeric
+    Monthly_Inhand_Salary: *typical_numeric
+    Num_Bank_Accounts: *typical_numeric
+    Num_Credit_Card: *typical_numeric
+    Interest_Rate: *typical_numeric
+    Num_of_Loan: *typical_numeric
+    Delay_from_due_date: *typical_numeric
+    Changed_Credit_Limit: *typical_numeric
+    Num_of_Delayed_Payment: *typical_numeric
+    Num_Credit_Inquiries: *typical_numeric
+    Outstanding_Debt: *typical_numeric
+    Credit_Utilization_Ratio: *typical_numeric
+    Total_EMI_per_month: *typical_numeric
+    Amount_invested_monthly: *typical_numeric
+    Monthly_Balance: *typical_numeric
+    Credit_History_Age:
+      - convert_age_to_months
